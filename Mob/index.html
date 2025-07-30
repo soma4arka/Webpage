@@ -1,1 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline Web Stream Player</title>
+    <style>
+        /* --- General Styles & Offline Font --- */
+        body {
+            /* Use common system fonts as a fallback for the offline version */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            background-color: #f7fafc;
+            color: #1a202c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem 0; /* Add some padding for smaller screens */
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* --- Main Container --- */
+        .container {
+            width: 100%;
+            max-width: 32rem; /* 512px */
+            margin: 1rem;
+            padding: 2rem;
+            background-color: #ffffff;
+            border-radius: 0.75rem; /* 12px */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        /* --- Typography --- */
+        h1 {
+            font-size: 1.875rem; /* 30px */
+            font-weight: 700;
+            text-align: center;
+            color: #2d3748;
+        }
+
+        .subtitle {
+            margin-top: 0.5rem; /* 8px */
+            font-size: 0.875rem; /* 14px */
+            color: #718096;
+            text-align: center;
+        }
+
+        /* --- Form Elements --- */
+        form {
+            margin-top: 2rem; /* 32px */
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem; /* 24px */
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem; /* 14px */
+            font-weight: 500;
+            color: #4a5568;
+            margin-bottom: 0.25rem; /* 4px */
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            box-sizing: border-box; /* Ensures padding doesn't affect width */
+            padding: 0.75rem 1rem;
+            background-color: #f9fafb;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem; /* 8px */
+            color: #111827;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+
+        button {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 0.75rem 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.5rem; /* 8px */
+            font-size: 0.875rem; /* 14px */
+            font-weight: 500;
+            color: white;
+            background-color: #3b82f6;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: #2563eb;
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* --- Output Section --- */
+        .hidden {
+            display: none;
+        }
+
+        #output {
+            margin-top: 2rem; /* 32px */
+        }
+
+        #output h2 {
+            font-size: 1.125rem; /* 18px */
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        /* --- URL Display --- */
+        .url-display-container {
+            background-color: #f3f4f6;
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem;
+            margin-top: 0.75rem;
+            text-align: center;
+        }
+        
+        #streamUrlDisplay {
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.875rem;
+            color: #3b82f6; /* Link color */
+            word-break: break-all;
+            text-decoration: none;
+        }
+        #streamUrlDisplay:hover {
+            text-decoration: underline;
+        }
+
+        /* --- Video Player Styles --- */
+        .video-container {
+            margin-top: 1rem;
+            background-color: #000;
+            border-radius: 0.5rem;
+            overflow: hidden; /* Ensures video corners are rounded with the container */
+            position: relative;
+        }
+
+        #videoPlayer {
+            width: 100%;
+            height: auto;
+            display: block; /* Removes bottom space under the video element */
+        }
+
+
+        /* --- Message Box --- */
+        #messageBox {
+            margin-top: 0.75rem; /* 12px */
+            text-align: center;
+            font-size: 0.875rem; /* 14px */
+            min-height: 1.25rem; /* Reserve space */
+        }
+
+        .message-success { color: #16a34a; }
+        .message-error { color: #dc2626; }
+
+        /* --- Note Section --- */
+        .note {
+            margin-top: 1.5rem; /* 24px */
+            text-align: center;
+            font-size: 0.75rem; /* 12px */
+            color: #718096;
+        }
+
+        /* --- Dark Mode Styles --- */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #111827;
+                color: #d1d5db;
+            }
+            .container {
+                background-color: #1f2937;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+            }
+            h1, #output h2 { color: #ffffff; }
+            .subtitle, .note { color: #9ca3af; }
+            label { color: #d1d5db; }
+            input[type="text"],
+            input[type="number"] {
+                background-color: #374151;
+                border-color: #4b5563;
+                color: #ffffff;
+            }
+            .url-display-container { background-color: #374151; }
+            #streamUrlDisplay { color: #60a5fa; }
+            .message-success { color: #4ade80; }
+            .message-error { color: #f87171; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div>
+            <h1>Web Stream Player</h1>
+            <p class="subtitle">Enter your stream's IP and Port to play it directly in your browser.</p>
+        </div>
+
+        <!-- Input Form -->
+        <form id="streamForm">
+            <div class="form-group">
+                <label for="ipAddress">Local IP Address</label>
+                <input type="text" id="ipAddress" name="ipAddress" required placeholder="e.g., 192.168.1.100">
+            </div>
+
+            <div class="form-group">
+                <label for="portNumber">Port Number</label>
+                <input type="number" id="portNumber" name="portNumber" required placeholder="e.g., 8080">
+            </div>
+
+            <button type="submit">Play Stream</button>
+        </form>
+
+        <!-- Output Section for the video player -->
+        <div id="output" class="hidden">
+            <h2>Now Streaming:</h2>
+            <!-- URL Display Area -->
+            <div class="url-display-container">
+                <a id="streamUrlDisplay" href="#" target="_blank" rel="noopener noreferrer"></a>
+            </div>
+            <!-- Video Player -->
+            <div class="video-container">
+                <video id="videoPlayer" controls autoplay muted playsinline>
+                    <source id="videoSource" src="" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            <div id="messageBox"></div>
+        </div>
+        
+        <!-- Important Note -->
+        <div class="note">
+            <p>
+                <strong>Note:</strong> For this to work, your stream must be accessible over HTTP and in a format your browser supports (like MP4 with H.264 video and AAC audio).
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Get references to the DOM elements
+        const streamForm = document.getElementById('streamForm');
+        const ipAddressInput = document.getElementById('ipAddress');
+        const portNumberInput = document.getElementById('portNumber');
+        const outputDiv = document.getElementById('output');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const videoSource = document.getElementById('videoSource');
+        const messageBox = document.getElementById('messageBox');
+        const streamUrlDisplay = document.getElementById('streamUrlDisplay'); // Get the new A element
+
+        // Listen for the form submission
+        streamForm.addEventListener('submit', function(event) {
+            // Prevent the default form submission behavior
+            event.preventDefault();
+
+            // Get the values from the input fields
+            const ip = ipAddressInput.value.trim();
+            const port = portNumberInput.value.trim();
+
+            // Basic validation
+            if (!ip || !port) {
+                displayMessage('Please fill out both fields.', 'error');
+                return;
+            }
+
+            // Construct the HTTP stream URL
+            const url = `http://${ip}:${port}`;
+
+            // Display the full URL in its dedicated element and make it clickable
+            streamUrlDisplay.textContent = url;
+            streamUrlDisplay.href = url;
+
+            // Set the new source for the video player
+            videoSource.setAttribute('src', url);
+            
+            // Load the new video source
+            videoPlayer.load();
+            
+            // Attempt to play the video (autoplay might be blocked by browser)
+            videoPlayer.play().catch(error => {
+                console.warn("Autoplay was prevented:", error);
+                displayMessage('Click the play button on the video player to start.', 'success');
+            });
+
+
+            // Show the output section
+            outputDiv.classList.remove('hidden');
+            
+            // Display a success message
+            displayMessage('Stream is loading...', 'success');
+        });
+
+        /**
+         * Displays a message in the message box.
+         * @param {string} text - The message to display.
+         * @param {string} type - The type of message ('success' or 'error').
+         */
+        function displayMessage(text, type) {
+            messageBox.textContent = text;
+            messageBox.className = type === 'success' ? 'message-success' : 'message-error';
+            
+            // Clear the message after 5 seconds
+            setTimeout(() => {
+                if (messageBox.textContent === text) { // Only clear if it's the same message
+                    messageBox.textContent = '';
+                    messageBox.className = '';
+                }
+            }, 5000);
+        }
+    </script>
+
+</body>
+</html>
 
