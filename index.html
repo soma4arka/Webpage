@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Offline Links</title>
+    
+    <style>
+        /* * All styles are now included directly in this file.
+         * This makes the page fully offline and faster to load.
+         * System fonts are used for maximum compatibility.
+        */
+        body {
+            /* Using common system fonts for offline compatibility */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f1f5f9; /* A light gray background */
+            margin: 0;
+            padding: 0;
+            color: #1e293b; /* A dark slate color for text */
+
+            /*
+             * --- BACKGROUND IMAGE OPTION ---
+             * To add a background image, uncomment the line below.
+             * For offline use, place your image file (e.g., 'my-background.jpg') in the SAME FOLDER as this HTML file,
+             * and then change the URL to just the filename.
+             *
+             * Example for an offline image:
+             * background-image: url('my-background.jpg');
+             *
+             * Example for an online image:
+             * background-image: url('https://images.unsplash.com/photo-1488190211105-8b0e65b80b4e');
+            */
+            /* background-image: url('path/to/your/image.jpg'); */
+
+            /* Optional: Uncomment and adjust these properties to control the background. */
+            /* background-size: cover; */       /* Makes the image cover the entire screen */
+            /* background-position: center; */  /* Centers the image */
+            /* background-repeat: no-repeat; */ /* Prevents the image from repeating */
+            /* background-attachment: fixed; */ /* Keeps the background fixed in place */
+        }
+
+        /* Main container to center everything */
+        .main-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            box-sizing: border-box; /* Ensures padding doesn't add to width/height */
+        }
+
+        h1 {
+            font-size: 2.25rem; /* 36px */
+            font-weight: 700;
+            margin-bottom: 2rem; /* 32px */
+            text-align: center;
+            /* Adding a subtle shadow to make text more readable over a background image */
+            text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Container for the buttons */
+        .button-container {
+            width: 100%;
+            max-width: 28rem; /* 448px */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* General styles for all buttons (<a> tags) */
+        .btn {
+            color: white;
+            text-align: center;
+            font-weight: 700;
+            text-decoration: none;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem; /* 8px */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease;
+            margin-bottom: 1rem; /* Space between buttons */
+            outline: 3px solid transparent; /* Placeholder for selection outline */
+        }
+
+        /* Make buttons slightly smaller on hover and lift up */
+        .btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Style for the currently selected button for keyboard navigation */
+        .btn.selected {
+            outline-color: #3b82f6; /* A bright blue outline */
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+
+        /* Specific colors for each button */
+        .btn-blue { background-color: #2563eb; }
+        .btn-blue:hover { background-color: #1d4ed8; }
+
+        .btn-green { background-color: #16a34a; }
+        .btn-green:hover { background-color: #15803d; }
+
+        .btn-purple { background-color: #9333ea; }
+        .btn-purple:hover { background-color: #7e22ce; }
+
+        .btn-gray { background-color: #475569; }
+        .btn-gray:hover { background-color: #334155; }
+        
+        .btn-red { background-color: #dc2626; }
+        .btn-red:hover { background-color: #b91c1c; }
+
+        .btn-orange { background-color: #f97316; }
+        .btn-orange:hover { background-color: #ea580c; }
+
+        .btn-yellow { background-color: #eab308; }
+        .btn-yellow:hover { background-color: #ca8a04; }
+
+        .btn-teal { background-color: #0d9488; }
+        .btn-teal:hover { background-color: #0f766e; }
+
+        .btn-indigo { background-color: #4f46e5; }
+        .btn-indigo:hover { background-color: #4338ca; }
+
+        .btn-pink { background-color: #db2777; }
+        .btn-pink:hover { background-color: #be185d; }
+
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        
+        <h1>My Quick Links</h1>
+
+        <div class="button-container">
+            
+            <!-- Button 1: Change the href="..." to your desired website link -->
+            <a href="https://www.google.com" target="_blank" class="btn btn-blue">Link One</a>
+            
+            <!-- Button 2: Change the href="..." to your desired website link -->
+            <a href="https://www.google.com" target="_blank" class="btn btn-green">Link Two</a>
+            
+            <!-- Button 3: Change the href="..." to your desired website link -->
+            <a href="https://www.google.com" target="_blank" class="btn btn-purple">Link Three</a>
+            
+            <!-- Button 4: Change the href="..." to your desired website link -->
+            <a href="https://www.google.com" target="_blank" class="btn btn-red">Link Four</a>
+
+            <!-- Button 5: Change the href="..." to your desired website link -->
+            <a href="https://www.google.com" target="_blank" class="btn btn-orange">Link Five</a>
+
+            <!-- Button 6: Change the href="..." to your desired website link -->
+            <a href="https://www.google.com" target="_blank" class="btn btn-yellow">Link Six</a>
+
+            <!-- Button 7: Change the href="..." to your desired website link -->
+            <a href="https://www.google.com" target="_blank" class="btn btn-teal">Link Seven</a>
+
+            <!-- Button 8: Change the href="..." to your desired website link -->
+            <a href="https://www.google.com" target="_blank" class="btn btn-indigo">Link Eight</a>
+
+            <!-- Button 9: Change the href="..." to your desired website link -->
+            <a href="https://www.google.com" target="_blank" class="btn btn-pink">Link Nine</a>
+
+            <!-- Button 10: Change the href="..." to your desired website link -->
+            <a href="https://www.google.com" target="_blank" class="btn btn-gray">Link Ten</a>
+            
+        </div>
+    </div>
+
+    <script>
+        // --- Keyboard Navigation Script ---
+        const buttons = document.querySelectorAll('.btn');
+        let selectedIndex = 0; // Start with the first button selected
+
+        // Function to update the visual selection
+        function updateSelection() {
+            // First, remove 'selected' class from all buttons
+            buttons.forEach(button => {
+                button.classList.remove('selected');
+            });
+            // Then, add 'selected' class to the current button
+            buttons[selectedIndex].classList.add('selected');
+            // Optional: scroll the button into view if the list is long
+            buttons[selectedIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Listen for key presses on the whole page
+        document.addEventListener('keydown', (event) => {
+            // Prevent default browser action for arrow keys (scrolling)
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+            }
+
+            if (event.key === 'ArrowDown') {
+                // Move selection down, looping to the top if at the end
+                selectedIndex = (selectedIndex + 1) % buttons.length;
+                updateSelection();
+            } else if (event.key === 'ArrowUp') {
+                // Move selection up, looping to the bottom if at the top
+                selectedIndex = (selectedIndex - 1 + buttons.length) % buttons.length;
+                updateSelection();
+            } else if (event.key === 'Enter') {
+                // "Click" the currently selected button
+                buttons[selectedIndex].click();
+            }
+        });
+
+        // Initialize the selection when the page loads
+        updateSelection();
+    </script>
+
+</body>
+</html>
