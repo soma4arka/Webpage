@@ -1,1 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Monster Animation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            display: block;
+            background-color: #000;
+            /* Removed box-shadow and border-radius for a seamless black background */
+        }
+    </style>
+</head>
+<body>
+    <canvas id="monsterCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('monsterCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Canvas and Scaling ---
+        // Set canvas size to fill the window for a full-screen effect
+        let canvasWidth = window.innerWidth;
+        let canvasHeight = window.innerHeight;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        // --- Core Animation & Pointer Variables ---
+        let frame = 0;
+        const pointer = { x: canvas.width / 2, y: canvas.height / 2 };
+
+        // --- Water Properties ---
+        const waterParticles = [];
+        const numWaterParticles = 100; // More particles for a fuller flow
+        const waterColor = 'rgba(0, 150, 255, 0.5)';
+
+        // --- Snake Properties ---
+        const snake = {
+            segments: [],
+            numSegments: 45, // Slightly more segments for a better skeleton
+            segmentSize: canvas.width * 0.015, // smaller segments for a more detailed spine
+            headPosition: { x: canvas.width / 2, y: canvas.height / 2 },
+            color: '#FFFFFF', 
+            eyeColor: '#ff0000',
+            eyeGlowColor: 'rgba(255, 0, 0, 0.7)'
+        };
+
+        // --- Leg Properties ---
+        const legs = [];
+
+        /**
+         * Initializes the water particles for a flowing effect.
+         */
+        function initWater() {
+            for (let i = 0; i < numWaterParticles; i++) {
+                waterParticles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    length: Math.random() * 30 + 10,
+                    speed: Math.random() * 1 + 0.5,
+                    opacity: Math.random() * 0.5 + 0.2
+                });
+            }
+        }
+
+        /**
+         * Initializes the snake's body segments.
+         */
+        function initSnake() {
+            for (let i = 0; i < snake.numSegments; i++) {
+                snake.segments.push({ x: snake.headPosition.x, y: snake.headPosition.y });
+            }
+        }
+
+        /**
+         * Initializes the skeletal legs.
+         */
+        function initLegs() {
+            const legConfig = [
+                { attachIndex: 8, side: 1, phase: 0 },
+                { attachIndex: 8, side: -1, phase: Math.PI },
+                { attachIndex: 16, side: 1, phase: Math.PI / 2 },
+                { attachIndex: 16, side: -1, phase: 3 * Math.PI / 2 },
+                { attachIndex: 25, side: 1, phase: Math.PI },
+                { attachIndex: 25, side: -1, phase: 0 },
+                { attachIndex: 34, side: 1, phase: 3 * Math.PI / 2 },
+                { attachIndex: 34, side: -1, phase: Math.PI / 2 }
+            ];
+
+            for (const config of legConfig) {
+                legs.push({
+                    attachIndex: config.attachIndex,
+                    side: config.side,
+                    phase: config.phase,
+                    hip: { x: 0, y: 0 },
+                    knee: { x: 0, y: 0 },
+                    foot: { x: 0, y: 0 }
+                });
+            }
+        }
+
+        /**
+         * The main animation loop.
+         */
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            updateWater();
+            drawWater();
+
+            updateSnakeHead();
+            updateSnakeBody();
+            updateLegs();
+
+            drawSnakeSkeleton();
+            drawLegs();
+            
+            frame++;
+            requestAnimationFrame(animate);
+        }
+
+        /**
+         * Updates the position of water particles, including the eating effect.
+         */
+        function updateWater() {
+            for (const particle of waterParticles) {
+                // Move particle to the right
+                particle.x += particle.speed;
+                
+                // Add a gentle sine wave for vertical movement
+                particle.y += Math.sin(frame * 0.01 + particle.x * 0.01) * 0.2;
+
+                const dx = particle.x - snake.headPosition.x;
+                const dy = particle.y - snake.headPosition.y;
+                const distanceToHead = Math.sqrt(dx * dx + dy * dy);
+                const eatingRadius = snake.segmentSize * 2.5;
+
+                // If snake head "eats" a particle, reset it
+                if (distanceToHead < eatingRadius) {
+                    particle.x = -particle.length;
+                    particle.y = Math.random() * canvas.height;
+                }
+
+                // Reset particle when it flows off screen
+                if (particle.x > canvas.width + particle.length) {
+                    particle.x = -particle.length;
+                    particle.y = Math.random() * canvas.height;
+                }
+            }
+        }
+
+        /**
+         * Draws the flowing water particles.
+         */
+        function drawWater() {
+            for (const particle of waterParticles) {
+                ctx.strokeStyle = `rgba(0, 150, 255, ${particle.opacity})`;
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(particle.x, particle.y);
+                ctx.lineTo(particle.x + particle.length, particle.y);
+                ctx.stroke();
+            }
+        }
+
+        /**
+         * Updates the snake's head to smoothly follow the pointer.
+         */
+        function updateSnakeHead() {
+            const ease = 0.02; 
+            snake.headPosition.x += (pointer.x - snake.headPosition.x) * ease;
+            snake.headPosition.y += (pointer.y - snake.headPosition.y) * ease;
+        }
+
+        /**
+         * Updates the body segments to follow the head.
+         */
+        function updateSnakeBody() {
+            let target = snake.headPosition;
+            for (const segment of snake.segments) {
+                const dx = segment.x - target.x;
+                const dy = segment.y - target.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance > snake.segmentSize) {
+                    const angle = Math.atan2(dy, dx);
+                    segment.x = target.x + Math.cos(angle) * snake.segmentSize;
+                    segment.y = target.y + Math.sin(angle) * snake.segmentSize;
+                }
+                target = segment;
+            }
+        }
+
+        /**
+         * Updates the position of the legs for a walking animation.
+         */
+        function updateLegs() {
+            for (const leg of legs) {
+                const hipSegment = snake.segments[leg.attachIndex];
+                const bodyAngle = Math.atan2(
+                    snake.segments[leg.attachIndex - 1].y - hipSegment.y,
+                    snake.segments[leg.attachIndex - 1].x - hipSegment.x
+                );
+
+                leg.hip.x = hipSegment.x;
+                leg.hip.y = hipSegment.y;
+
+                const stepCycle = frame * 0.05 + leg.phase;
+                const stepLength = 60;
+                const stepHeight = 20;
+
+                const footOffsetX = Math.cos(stepCycle) * stepLength;
+                const footOffsetY = leg.side * 60 + Math.sin(stepCycle) * stepHeight;
+
+                const rotatedFootX = leg.hip.x + Math.cos(bodyAngle) * footOffsetX - Math.sin(bodyAngle) * footOffsetY;
+                const rotatedFootY = leg.hip.y + Math.sin(bodyAngle) * footOffsetX + Math.cos(bodyAngle) * footOffsetY;
+                
+                leg.foot.x = rotatedFootX;
+                leg.foot.y = rotatedFootY;
+
+                const hipToFootX = leg.foot.x - leg.hip.x;
+                const hipToFootY = leg.foot.y - leg.hip.y;
+                const midX = leg.hip.x + hipToFootX / 2;
+                const midY = leg.hip.y + hipToFootY / 2;
+                const kneeOffsetX = -hipToFootY * 0.3 * leg.side;
+                const kneeOffsetY = hipToFootX * 0.3 * leg.side;
+
+                leg.knee.x = midX + kneeOffsetX;
+                leg.knee.y = midY + kneeOffsetY;
+            }
+        }
+
+        /**
+         * Draws the snake's skeleton, including spine, ribs, and an elongated head.
+         */
+        function drawSnakeSkeleton() {
+            ctx.strokeStyle = snake.color;
+            ctx.lineWidth = 2;
+
+            // Draw spine
+            ctx.beginPath();
+            ctx.moveTo(snake.segments[0].x, snake.segments[0].y);
+            for (let i = 1; i < snake.segments.length; i++) {
+                ctx.lineTo(snake.segments[i].x, snake.segments[i].y);
+            }
+            ctx.stroke();
+
+            // Draw ribs and tail bones
+            for (let i = 1; i < snake.segments.length - 1; i++) {
+                const p1 = snake.segments[i - 1];
+                const p2 = snake.segments[i + 1];
+                const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+                const perpAngle = angle + Math.PI / 2;
+                const ribLength = Math.max(0, 30 * (1 - (i / (snake.numSegments * 0.8))));
+
+                if (i < snake.numSegments * 0.7) {
+                    const ribX1 = snake.segments[i].x + Math.cos(perpAngle) * ribLength;
+                    const ribY1 = snake.segments[i].y + Math.sin(perpAngle) * ribLength;
+                    const ribX2 = snake.segments[i].x - Math.cos(perpAngle) * ribLength;
+                    const ribY2 = snake.segments[i].y - Math.sin(perpAngle) * ribLength;
+                    ctx.beginPath();
+                    ctx.moveTo(ribX1, ribY1);
+                    ctx.lineTo(ribX2, ribY2);
+                    ctx.stroke();
+                } else {
+                    const tailBoneLength = ribLength * 0.8;
+                    const tailBoneAngle = Math.PI / 4;
+                    const tailX1 = snake.segments[i].x + Math.cos(perpAngle + tailBoneAngle) * tailBoneLength;
+                    const tailY1 = snake.segments[i].y + Math.sin(perpAngle + tailBoneAngle) * tailBoneLength;
+                    const tailX2 = snake.segments[i].x - Math.cos(perpAngle - tailBoneAngle) * tailBoneLength;
+                    const tailY2 = snake.segments[i].y - Math.sin(perpAngle - tailBoneAngle) * tailBoneLength;
+                    ctx.beginPath(); ctx.moveTo(snake.segments[i].x, snake.segments[i].y); ctx.lineTo(tailX1, tailY1); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(snake.segments[i].x, snake.segments[i].y); ctx.lineTo(tailX2, tailY2); ctx.stroke();
+                }
+            }
+            
+            // Draw head details with increased length
+            const head = snake.segments[0];
+            const prev = snake.segments[1];
+            const angle = Math.atan2(head.y - prev.y, head.x - prev.x);
+            
+            ctx.save();
+            ctx.translate(head.x, head.y);
+            ctx.rotate(angle);
+
+            // Draw longer jaw
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-25, -8); // Increased length
+            ctx.lineTo(-25, 8);  // Increased length
+            ctx.closePath();
+            ctx.stroke();
+
+            // Draw longer head spikes
+            ctx.beginPath();
+            ctx.moveTo(5, 0);
+            ctx.lineTo(20, -9); // Increased length
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(5, 0);
+            ctx.lineTo(20, 9);  // Increased length
+            ctx.stroke();
+
+            // Draw eyes with glow, moved back slightly
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = snake.eyeGlowColor;
+            ctx.fillStyle = snake.eyeColor;
+            ctx.beginPath();
+            ctx.arc(-10, 0, 2.5, 0, Math.PI * 2); // Moved eye back
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.restore();
+        }
+
+        /**
+         * Draws the skeletal legs.
+         */
+        function drawLegs() {
+            ctx.strokeStyle = snake.color;
+            ctx.lineWidth = 2;
+            for (const leg of legs) {
+                ctx.beginPath();
+                ctx.moveTo(leg.hip.x, leg.hip.y);
+                ctx.lineTo(leg.knee.x, leg.knee.y);
+                ctx.lineTo(leg.foot.x, leg.foot.y);
+                const footAngle = Math.atan2(leg.foot.y - leg.knee.y, leg.foot.x - leg.knee.x);
+                ctx.moveTo(leg.foot.x, leg.foot.y);
+                ctx.lineTo(leg.foot.x + Math.cos(footAngle + 0.5) * 15, leg.foot.y + Math.sin(footAngle + 0.5) * 15);
+                ctx.moveTo(leg.foot.x, leg.foot.y);
+                ctx.lineTo(leg.foot.x + Math.cos(footAngle - 0.5) * 15, leg.foot.y + Math.sin(footAngle - 0.5) * 15);
+                ctx.stroke();
+            }
+        }
+        
+        // --- Event Listeners ---
+        function handlePointerMove(event) {
+            if (event.type.includes('touch')) {
+                event.preventDefault();
+            }
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY;
+            if (event.touches && event.touches.length > 0) {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+            pointer.x = clientX - rect.left;
+            pointer.y = clientY - rect.top;
+        }
+
+        window.addEventListener('mousemove', handlePointerMove);
+        window.addEventListener('touchstart', handlePointerMove, { passive: false });
+        window.addEventListener('touchmove', handlePointerMove, { passive: false });
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvasWidth = canvas.width;
+            canvasHeight = canvas.height;
+            
+            snake.segmentSize = canvas.width * 0.015;
+        });
+
+        // --- Start the Animation ---
+        initWater();
+        initSnake();
+        initLegs();
+        animate();
+    </script>
+</body>
+</html>
 
