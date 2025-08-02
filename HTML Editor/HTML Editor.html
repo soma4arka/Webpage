@@ -1,1 +1,308 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fully Offline HTML Editor</title>
+    <style>
+        /* --- Reset and Base Styles --- */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            border-width: 0;
+            border-style: solid;
+            border-color: #e5e7eb;
+        }
+        html {
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -moz-tab-size: 4;
+            tab-size: 4;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+        body {
+            margin: 0;
+            line-height: inherit;
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none; /* Prevents pull-to-refresh on mobile */
+            background-color: #2d3748; /* bg-gray-800 */
+            color: #fff; /* text-white */
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
+        /* --- Custom Scrollbar --- */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background-color: #4a5568;
+            border-radius: 10px;
+            border: 2px solid #2d3748;
+        }
+        
+        /* --- Layout & Component Styles --- */
+        .header {
+            background-color: #1a202c; /* bg-gray-900 */
+            padding: 0.75rem; /* p-3 */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+            flex-shrink: 0;
+        }
+        .header h1 {
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 700; /* font-bold */
+        }
+        .header .button-group {
+            display: flex;
+            align-items: center;
+        }
+        .header .button-group > * + * {
+            margin-left: 0.75rem; /* space-x-3 */
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            color: #fff;
+            font-weight: 600; /* font-semibold */
+            padding: 0.5rem 1rem; /* py-2 px-4 */
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+            transition: transform 0.15s ease-in-out;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        .btn svg {
+            height: 1.25rem; /* h-5 */
+            width: 1.25rem; /* w-5 */
+            margin-right: 0.5rem; /* space-x-2 */
+        }
+        .btn-blue {
+            background-color: #3b82f6; /* bg-blue-600 */
+        }
+        .btn-blue:hover {
+            background-color: #2563eb; /* hover:bg-blue-700 */
+        }
+        .btn-green {
+            background-color: #16a34a; /* bg-green-600 */
+        }
+        .btn-green:hover {
+            background-color: #15803d; /* hover:bg-green-700 */
+        }
+        .hidden {
+            display: none;
+        }
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column; /* Default for mobile */
+            height: 100%;
+            overflow: hidden;
+        }
+        .panel {
+            width: 100%; /* w-full */
+            height: 50%; /* h-1/2 */
+            display: flex;
+            flex-direction: column;
+        }
+        .panel-label {
+            background-color: #4a5568; /* bg-gray-700 */
+            padding: 0.5rem; /* p-2 */
+            font-size: 0.875rem; /* text-sm */
+            font-weight: 600; /* font-semibold */
+        }
+        #code-editor {
+            width: 100%;
+            height: 100%;
+            padding: 1rem; /* p-4 */
+            background-color: #1a202c; /* bg-gray-900 */
+            color: #6ee7b7; /* text-green-300 */
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; /* font-mono */
+            font-size: 0.875rem; /* text-sm */
+            outline: none;
+            resize: none;
+        }
+        #preview-frame {
+            width: 100%;
+            height: 100%;
+            border-width: 0;
+            background-color: white;
+        }
+
+        /* --- Responsive Styles for Desktop --- */
+        @media (min-width: 768px) {
+            .main-content {
+                flex-direction: row; /* md:flex-row */
+            }
+            .panel {
+                width: 50%; /* md:w-1/2 */
+                height: 100%; /* md:h-full */
+            }
+            .panel-code {
+                border-right: 1px solid #4a5568; /* border-r border-gray-700 */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header with Action Buttons -->
+    <header class="header">
+        <h1>HTML Editor</h1>
+        <div class="button-group">
+            <!-- Open File Button -->
+            <button id="open-btn" class="btn btn-blue">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                </svg>
+                <span>Open</span>
+            </button>
+            <!-- Hidden file input triggered by the open button -->
+            <input type="file" id="file-input" accept=".html,.htm" class="hidden">
+
+            <!-- Save File Button -->
+            <button id="save-btn" class="btn btn-green">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+                <span>Save</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area (Editor and Preview) -->
+    <main class="main-content">
+        
+        <!-- Code Editor Panel -->
+        <div class="panel panel-code">
+            <div class="panel-label">Code</div>
+            <textarea id="code-editor" placeholder="<!-- Write your HTML here -->" spellcheck="false"></textarea>
+        </div>
+
+        <!-- Live Preview Panel -->
+        <div class="panel">
+            <div class="panel-label">Preview</div>
+            <iframe id="preview-frame" sandbox="allow-scripts allow-same-origin"></iframe>
+        </div>
+
+    </main>
+
+    <script>
+        // Get references to the DOM elements
+        const codeEditor = document.getElementById('code-editor');
+        const previewFrame = document.getElementById('preview-frame');
+        const openBtn = document.getElementById('open-btn');
+        const fileInput = document.getElementById('file-input');
+        const saveBtn = document.getElementById('save-btn');
+
+        // --- Function to update the preview ---
+        const updatePreview = () => {
+            const code = codeEditor.value;
+            // Using srcdoc is safer and more efficient than writing to the document directly
+            previewFrame.srcdoc = code;
+        };
+
+        // --- Event Listener for the Code Editor ---
+        // Update the preview in real-time as the user types
+        codeEditor.addEventListener('input', updatePreview);
+
+        // --- Event Listeners for File Operations ---
+
+        // 1. Open File
+        openBtn.addEventListener('click', () => {
+            // Trigger the hidden file input when the "Open" button is clicked
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                return; // User cancelled the dialog
+            }
+
+            const reader = new FileReader();
+            
+            // This function runs when the file has been read
+            reader.onload = (e) => {
+                const fileContent = e.target.result;
+                codeEditor.value = fileContent; // Put content into the editor
+                updatePreview(); // Update the preview with the new content
+            };
+
+            // This function runs if there's an error reading the file
+            reader.onerror = (e) => {
+                console.error("Error reading file:", e);
+                // Using a custom modal or a less obtrusive notification is better,
+                // but for a simple offline tool, alert is acceptable.
+                // Note: alert() might not work in all sandboxed environments.
+                console.log('An error occurred while reading the file.');
+            };
+
+            reader.readAsText(file); // Start reading the file as text
+        });
+
+        // 2. Save File
+        saveBtn.addEventListener('click', () => {
+            const codeToSave = codeEditor.value;
+            
+            // Create a Blob (a file-like object) from the code
+            const blob = new Blob([codeToSave], { type: 'text/html' });
+
+            // Create a temporary URL for the Blob
+            const url = URL.createObjectURL(blob);
+
+            // Create a temporary anchor (link) element to trigger the download
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'index.html'; // The default filename for the saved file
+            
+            // Programmatically click the link to start the download
+            document.body.appendChild(a);
+            a.click();
+            
+            // Clean up by removing the temporary link and revoking the URL
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // --- Initial Load ---
+        // Set some default content and update the preview when the page loads
+        codeEditor.value = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Page</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: grid;
+            place-content: center;
+            min-height: 90vh;
+            text-align: center;
+            background-color: #f0f2f5;
+        }
+        h1 {
+            color: #1c1e21;
+        }
+        p {
+            color: #606770;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hello, World!</h1>
+    <p>This is your live preview.</p>
+</body>
+</html>`;
+        updatePreview();
+    </script>
+</body>
+</html>
