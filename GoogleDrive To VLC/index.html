@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Google Drive to VLC Stream Link Converter & Player</title>
+<title>Google Drive API Stream Link Generator (VLC)</title>
 <style>
     body {
         font-family: Arial, sans-serif;
@@ -35,39 +35,34 @@
         border-radius: 4px;
         box-sizing: border-box;
     }
-    .button-link {
-        /* Styles to make the anchor tag look like a button */
-        display: inline-block;
-        background-color: #5cb85c;
+    button {
+        background-color: #007bff;
         color: white;
-        text-decoration: none; /* Remove underline */
         padding: 10px 15px;
         border: none;
         border-radius: 4px;
         cursor: pointer;
         font-size: 16px;
-        text-align: center;
-        margin-top: 15px;
+        margin-right: 10px; /* Space between buttons */
     }
-    .button-link:hover {
-        background-color: #4cae4c;
+    button:hover {
+        background-color: #0056b3;
     }
     #warning {
-        color: red;
+        color: darkred;
         font-weight: bold;
         margin-top: 10px;
     }
 </style>
 <script>
     function extractFileId(url) {
-        // 1. Try to extract from the standard share link format: /d/FILE_ID/view
+        // Extracts the ID from the standard share link: /d/FILE_ID/view
         let match = url.match(/\/d\/([a-zA-Z0-9_-]+)\/view/);
         if (match && match[1]) {
             return match[1];
         }
 
-        // 2. Try to extract from query parameters: ?id=FILE_ID
-        // This handles drive.usercontent.google.com and other uc?id=... links
+        // Extracts the ID from query parameters: ?id=FILE_ID
         match = url.match(/[?&]id=([^&]+)/);
         if (match && match[1]) {
             return match[1];
@@ -76,63 +71,75 @@
         return null;
     }
 
-    function convertLink() {
+    function generateStreamLink() {
+        // Get values from the new input fields
+        const apiKey = document.getElementById('apiKeyInput').value.trim();
         const shareLink = document.getElementById('shareLink').value.trim();
+        
         const outputField = document.getElementById('vlcLink');
-        const openVLCButton = document.getElementById('openVLCButton');
         const warningDiv = document.getElementById('warning');
+        outputField.value = '';
+        warningDiv.textContent = '';
+        
+        // 1. Check if the API key is entered
+        if (!apiKey) {
+             warningDiv.textContent = 'ERROR: Please enter your Google Drive API Key.';
+             return;
+        }
 
         const fileId = extractFileId(shareLink);
 
         if (fileId) {
-            // 1. Construct the reliable public direct stream link
-            const directStreamLink = 'https://drive.google.com/uc?export=download&id=' + fileId;
-            outputField.value = directStreamLink;
+            // 2. Construct the API stream link using the File ID and the input API Key
+            const apiStreamLink = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${apiKey}`;
+            outputField.value = apiStreamLink;
             
-            // 2. The most reliable way to stream in VLC for Android/iOS is with the vlc:// scheme
-            // NOTE: The vlc:// scheme is unreliable on desktop browsers.
-            const vlcSchemeURL = 'vlc://' + directStreamLink;
+            warningDiv.textContent = '✅ Link Generated! Copy the link and paste it into VLC.';
             
-            // 3. Set the 'href' of the button to the vlc:// scheme link
-            openVLCButton.href = vlcSchemeURL;
-            openVLCButton.style.display = 'inline-block';
-            
-            // Clear warnings
-            warningDiv.textContent = '';
-            
-            if (!shareLink.includes('drive.google.com/file/d')) {
-                 warningDiv.textContent = '⚠️ Ensure file is "Anyone with the link" and use this button on your Android TV.';
-            }
-
         } else {
             // Error handling
-            outputField.value = 'Error: Could not find a valid Google Drive File ID.';
-            openVLCButton.style.display = 'none';
-            warningDiv.textContent = 'Error: Invalid Google Drive link format.';
+            warningDiv.textContent = 'Error: Could not find a valid Google Drive File ID. Check your link format.';
         }
+    }
+
+    // Function for user convenience to easily copy the final link
+    function copyLink() {
+        const outputField = document.getElementById('vlcLink');
+        
+        if (!outputField.value) {
+            alert("No link to copy! Please generate the link first.");
+            return;
+        }
+        
+        outputField.select();
+        outputField.setSelectionRange(0, 99999); // For mobile devices
+        document.execCommand('copy');
+        alert("Link copied to clipboard! Paste it into VLC's 'Open Network Stream'.");
     }
 </script>
 </head>
 <body>
 
 <div class="container">
-    <h2>Google Drive to VLC Stream Link Converter & Player 🔗▶️</h2>
-    <p>Paste your Google Drive link (share or direct download) below. Ensure the file is shared publicly!</p>
+    <h2>Google Drive API Stream Link Generator (VLC) 🔑</h2>
+    <p>Use your **API Key** and **Share Link** to generate the streamable URL. Remember to set the file to **Anyone with the link** access.</p>
 
-    <label for="shareLink">Google Drive Link:</label>
+    <label for="apiKeyInput">1. Google Drive API Key:</label>
+    <input type="text" id="apiKeyInput" value="AIzaSyDLF7qGoDnlc0uHebggsp4gZBCxKwDxLbs" placeholder="Paste your API key here (e.g., AIzaSy...)...">
+
+    <label for="shareLink">2. Google Drive Share Link:</label>
     <input type="text" id="shareLink" placeholder="e.g., https://drive.google.com/file/d/FILE_ID/view...">
 
-    <button onclick="convertLink()">1. Convert to VLC Link</button>
-    
     <div id="warning"></div>
 
-    <label for="vlcLink">Reliable VLC Stream URL (Copy this into VLC if button fails):</label>
-    <input type="text" id="vlcLink" readonly placeholder="Converted link will appear here...">
-
-    <a href="#" id="openVLCButton" class="button-link" style="display:none;">2. Open Stream in VLC</a>
+    <button onclick="generateStreamLink()">3. Generate Stream Link</button>
+    <button onclick="copyLink()" style="background-color: #5cb85c;">4. Copy Link</button>
+    
+    <label for="vlcLink">Final Streamable API URL:</label>
+    <input type="text" id="vlcLink" readonly placeholder="Stream link will appear here...">
 
     <p style="margin-top: 20px; font-size: 0.9em; color: #555;">
-        *Note on the button: This button uses the **<code>vlc://</code>** deep-linking scheme. It works reliably when clicked on a **mobile device or Android TV** that has the VLC app installed. It is **not reliable** on desktop web browsers.
+        **Instructions:** Copy the **Final Streamable API URL** and paste it directly into **VLC**'s **Open Network Stream** feature.
     </p>
 </div>
 
